@@ -1,0 +1,4 @@
+name = NTLM Sharepoint API Connector
+description = Connect to API behind endpoint
+package = custom
+core = 7.x

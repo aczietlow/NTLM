@@ -1,0 +1,110 @@
+<?php
+/**
+ * @file
+ * Sharepiont API module file.
+ */
+
+use NTLM\Sharepoint\API; 
+
+/**
+ * Implements hook_boot().
+ *
+ * Register the autoloader from composer.
+ */
+function ntlm_boot() {
+  static $already_booted = FALSE;
+  if (!$already_booted) {
+    // Cannot use drupal_get_path because we are too early in the boot process.
+    require_once __DIR__ . '/vendor/autoload.php';
+    $already_booted = TRUE;
+  }
+}
+
+/**
+ * Fetches the NTLM user from settings.php.
+ *
+ * @return string
+ *   NTLM API account user.
+ *
+ * @throws \Exception
+ *   If Drupal can not find the username.
+ */
+function _ntlm_get_username() {
+  $username = variable_get('sharepoint_user');
+
+  if (empty($username)) {
+    drupal_set_message(t('Could not find API username. Please add the API crendentials to settings.php'), 'error');
+    watchdog('Sharepoint', 'Could not find API username. Please add the API crendentials to settings.php', NULL, WATCHDOG_EMERGENCY);
+    throw new Exception("Could not find API username. Please add the API crendentials to settings.php");
+  }
+
+  return $username;
+}
+
+/**
+ * Fetches the NTLM password from settings.php.
+ *
+ * @return string
+ *   NTLM API account password.
+ *
+ * @throws \Exception
+ *   If Drupal can not find the password.
+ */
+function _ntlm_get_password() {
+  $password = variable_get('sharepoint_password');
+  if (empty($password)) {
+    drupal_set_message(t('Could not find API password. Please add the API crendentials to settings.php'), 'error');
+    watchdog('Sharepoint', 'Could not find API password. Please add the API crendentials to settings.php', NULL, WATCHDOG_EMERGENCY);
+    throw new Exception("Could not find API username. Please add the API crendentials to settings.php");
+  }
+
+  return $password;
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function ntlm_entity_insert($entity, $type) {
+  if ($entity->type == 'request_entity_form') {
+    $json_data = _ntlm_prepare_request_data($entity);
+    // Post new list item to Sharepoint API.
+    $api = new API(_ntlm_get_username(), _ntlm_get_password());
+
+    /* @var $response \GuzzleHttp\Psr7\Response */
+    $response = $api->createItem($json_data);
+
+    if (!$response->getStatusCode() == 200) {
+      // Do things and stuff.
+    }
+
+}
+
+/**
+ * Fetches entity data and preps data for json encoded.
+ *
+ * At this point the entity has not been saved yet, so there is no id.
+ *
+ * @param object $entity
+ *   Entity form object.
+ *
+ * @return array
+ *   An Associative array to be converted into json.
+ */
+function _ntlm_prepare_request_data($entity) {
+  $entityform_wrapper = entity_metadata_wrapper($entity->entityType(), $entity->identifier());
+
+  // Format address from address field.
+  $address_result = $entityform_wrapper->field_address->value();
+  $address = [];
+  $address[] = $address_result['thoroughfare'];
+  $address[] = $address_result['locality'] . ', ' . $address_result['administrative_area'];
+  $address[] = $address_result['country'];
+  $address = implode(' ', $address);
+
+  return $json_data = [
+    'Date' => date('m/d/Y G:i A'),
+    'Address' => $address,
+    'Name' => $entityform_wrapper->field_name->value(),
+    'Template_Type' => $entityform_wrapper->field_template_type->value(),
+  ];
+}
