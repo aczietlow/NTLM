@@ -1,0 +1,28 @@
+{
+  "name": "Piper/NTLM",
+  "description": "A PHP library to communication with the Pied Piper Sharepoint API.",
+  "authors": [
+    {
+      "name": "chris.zietlow",
+      "email": "aczietlow@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "guzzlehttp/guzzle": "6.2.x",
+    "psr/log": "1.0.x",
+    "symfony/config": "2.8.x",
+    "symfony/yaml": "2.8.x"
+  },
+  "require-dev": {
+    "phpspec/phpspec": "^3.0"
+  },
+  "config": {
+    "bin-dir": "bin"
+  },
+  "autoload": {
+    "psr-4": {
+      "Piper\\": "src/"
+    }
+  }
+}
